@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f8fc">
+  <meta name="description" content="Аналитика подтверждённых бронирований и выручки московских событий">
+  <title>Аналитика бронирований — Московские события</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="identity">
+        <div class="logo" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div>
+          <div class="identity-name">Московские события</div>
+          <div class="identity-caption">Панель аналитики</div>
+        </div>
+      </div>
+      <nav class="topbar-actions" aria-label="Полезные ссылки и действия">
+        <a class="api-link" href="/docs" target="_blank" rel="noopener noreferrer">Документация API <span aria-hidden="true">↗</span></a>
+        <button class="refresh-button" type="button" id="refreshButton" title="Обновить данные">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5"></path><path d="M4 17v-5h5"></path><path d="M5.6 9A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 12.4-3"></path></svg>
+          Обновить
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="page-intro" aria-labelledby="pageTitle">
+      <div>
+        <div class="eyebrow"><span class="eyebrow-line"></span> ОТЧЁТ ПО БРОНИРОВАНИЯМ <span class="eyebrow-muted">/ ВАРИАНТ 36</span></div>
+        <h1 id="pageTitle">Динамика бронирований</h1>
+        <p class="intro-description">Подтверждённые бронирования и выручка за выбранный период — по дням, неделям или месяцам.</p>
+      </div>
+      <div class="connection" id="connection" role="status" aria-live="polite">
+        <span class="connection-dot" aria-hidden="true"></span>
+        <span id="connectionText">Подключение к API</span>
+      </div>
+    </section>
+
+    <section class="filter-card" aria-labelledby="filterTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="filterTitle">Параметры отчёта</h2>
+          <p>Фильтрация по дате создания бронирования</p>
+        </div>
+        <span class="timezone-pill">MSK · UTC+3</span>
+      </div>
+      <form id="filtersForm" novalidate>
+        <div class="filter-grid">
+          <div class="date-fields">
+            <label class="field">
+              <span>Дата с</span>
+              <input type="date" id="dateFrom" name="from" required>
+            </label>
+            <label class="field">
+              <span>Дата по</span>
+              <input type="date" id="dateTo" name="to" required>
+            </label>
+          </div>
+          <div class="group-control">
+            <span class="field-label" id="groupLabel">Группировать</span>
+            <div class="segment" role="group" aria-labelledby="groupLabel">
+              <button type="button" class="segment-button active" data-group="day" aria-pressed="true">Дни</button>
+              <button type="button" class="segment-button" data-group="week" aria-pressed="false">Недели</button>
+              <button type="button" class="segment-button" data-group="month" aria-pressed="false">Месяцы</button>
+            </div>
+          </div>
+          <button id="applyButton" class="primary-button" type="submit">Показать отчёт
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </button>
+        </div>
+        <div class="filter-bottom">
+          <div class="quick-ranges" role="group" aria-label="Быстрый выбор периода">
+            <span>Период:</span>
+            <button type="button" data-days="7">7 дней</button>
+            <button type="button" data-days="30">30 дней</button>
+            <button type="button" data-days="90" class="selected">90 дней</button>
+          </div>
+          <span class="filter-hint" id="filterHint">Последний день включён в выборку</span>
+        </div>
+        <p class="form-error" id="formError" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <div class="report-meta">
+      <div class="report-title">
+        <h2>Обзор показателей</h2>
+        <p id="reportPeriod">Загрузка отчёта…</p>
+      </div>
+      <span class="report-updated" id="lastUpdated"></span>
+    </div>
+
+    <section class="kpi-grid" aria-label="Ключевые показатели">
+      <article class="kpi-card">
+        <div class="kpi-label"><span class="metric-mark metric-blue" aria-hidden="true"></span> Подтверждённые брони</div>
+        <div class="kpi-value" id="totalBookings">—</div>
+        <div class="kpi-footnote">Количество бронирований</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label"><span class="metric-mark metric-teal" aria-hidden="true"></span> Выручка</div>
+        <div class="kpi-value" id="totalRevenue">—</div>
+        <div class="kpi-footnote">По зафиксированной стоимости брони</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label"><span class="metric-mark metric-purple" aria-hidden="true"></span> Забронировано билетов</div>
+        <div class="kpi-value" id="totalTickets">—</div>
+        <div class="kpi-footnote">Суммарное количество билетов</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label"><span class="metric-mark metric-orange" aria-hidden="true"></span> Средний чек</div>
+        <div class="kpi-value" id="averageCheck">—</div>
+        <div class="kpi-footnote">Выручка / число подтверждённых броней</div>
+      </article>
+    </section>
+
+    <div id="requestError" class="request-error" role="alert" hidden>
+      <strong>Не удалось загрузить данные.</strong>
+      <p id="requestErrorMessage"></p>
+      <button type="button" id="retryButton">Повторить запрос</button>
+    </div>
+
+    <section class="charts-grid" id="chartsSection" aria-label="Графики показателей">
+      <article class="chart-card">
+        <div class="chart-heading">
+          <div>
+            <div class="chart-eyebrow">БРОНИРОВАНИЯ</div>
+            <h3>Количество подтверждённых броней</h3>
+            <p>Динамика за выбранный период</p>
+          </div>
+          <div class="legend"><span class="legend-dot blue"></span> Брони</div>
+        </div>
+        <div class="chart-body">
+          <svg id="bookingsChart" class="chart" role="img" aria-label="График количества подтверждённых бронирований"></svg>
+          <div class="chart-empty" id="bookingsEmpty" hidden>За выбранный период подтверждённых бронирований нет.</div>
+        </div>
+      </article>
+      <article class="chart-card">
+        <div class="chart-heading">
+          <div>
+            <div class="chart-eyebrow">ВЫРУЧКА</div>
+            <h3>Выручка по бронированиям</h3>
+            <p>Сумма в рублях, отменённые брони не учитываются</p>
+          </div>
+          <div class="legend"><span class="legend-dot teal"></span> Рубли</div>
+        </div>
+        <div class="chart-body">
+          <svg id="revenueChart" class="chart" role="img" aria-label="График выручки по подтверждённым бронированиям"></svg>
+          <div class="chart-empty" id="revenueEmpty" hidden>За выбранный период выручки нет.</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="table-card" aria-labelledby="detailsTitle">
+      <div class="table-heading">
+        <div>
+          <h2 id="detailsTitle">Детализация</h2>
+          <p id="tableDescription">Показатели по периодам</p>
+        </div>
+        <div class="table-actions">
+          <label class="toggle-empty"><input type="checkbox" id="showEmpty"> Пустые периоды</label>
+          <button type="button" class="outline-button" id="exportButton" disabled>Скачать CSV <span aria-hidden="true">↓</span></button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th scope="col">Период</th><th scope="col" class="numeric">Бронирования</th><th scope="col" class="numeric">Билеты</th><th scope="col" class="numeric">Выручка</th><th scope="col" class="numeric">Средний чек</th></tr></thead>
+          <tbody id="detailsBody"><tr><td colspan="5" class="table-message">Загрузка…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-footer"><span id="tableRowsInfo">—</span><span>Периоды без записей на графиках равны нулю</span></div>
+    </section>
+
+    <footer class="page-footer">
+      <span>Источник: Moscow Events API · <code>/api/v1/analytics/reservations</code></span>
+      <span>Группировка по московскому времени · только статус confirmed</span>
+    </footer>
+  </main>
+</body>
+</html>
