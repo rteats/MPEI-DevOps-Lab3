@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgis/postgis:17-3.6
+    environment:
+      POSTGRES_DB: moscow_events
+      POSTGRES_USER: moscow_events
+      POSTGRES_PASSWORD: moscow_events_dev
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moscow_events -d moscow_events"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/nelkor/moscow-events:latest
+    environment:
+      PG_HOST: db
+      PG_PORT: "5432"
+      PG_DB_NAME: moscow_events
+      PG_USER_NAME: moscow_events
+      PG_USER_PASSWORD: moscow_events_dev
+      SEED_MODE: sample
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    image: nginx:stable-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data:
