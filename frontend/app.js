@@ -1,6 +1,6 @@
 import {
   addDays, buildQuery, fillPeriods, initialRange, parseDay, totals, validateRange
-} from "./analytics.mjs";
+} from "./analytics.js";
 
 const byId = id => document.getElementById(id);
 const ui = {

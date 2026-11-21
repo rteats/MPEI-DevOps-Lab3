@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   addDays, buildQuery, fillPeriods, initialRange, lastDayOfMonth,
   moscowDay, startOfPeriod, totals, validateRange
-} from "../frontend/analytics.mjs";
+} from "../frontend/analytics.js";
 
 test("период бронирования включает последний день, API получает полуоткрытый интервал по Москве", () => {
   const query = buildQuery("2027-02-28", "2027-03-01", "day");
